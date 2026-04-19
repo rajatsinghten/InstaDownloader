@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Download Instagram Reels, Photos and Videos instantly. Free, fast, and beautiful.">
+    <title>InstaDownloader — Download Reels, Photos & Videos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📸</text></svg>">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-gradient"></div>
+    <div class="bg-noise"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header" id="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                        <circle cx="12" cy="12" r="5"/>
+                        <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/>
+                    </svg>
+                </div>
+                <h1>Insta<span class="gradient-text">Downloader</span></h1>
+            </div>
+            <p class="tagline">Download Reels, Photos & Videos instantly</p>
+        </header>
+
+        <!-- Main Input Section -->
+        <main class="main">
+            <div class="input-section" id="input-section">
+                <div class="input-card glass-card">
+                    <div class="input-wrapper">
+                        <div class="input-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                            </svg>
+                        </div>
+                        <input
+                            type="url"
+                            id="url-input"
+                            placeholder="Paste Instagram link here..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                        <button class="paste-btn" id="paste-btn" title="Paste from clipboard">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="fetch-btn" id="fetch-btn" disabled>
+                        <span class="btn-text">Fetch Media</span>
+                        <span class="btn-loader">
+                            <span class="spinner"></span>
+                            Extracting...
+                        </span>
+                        <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                            <polyline points="12 5 19 12 12 19"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Supported Types -->
+                <div class="supported-types">
+                    <span class="type-pill">
+                        <span class="type-dot reel"></span>Reels
+                    </span>
+                    <span class="type-pill">
+                        <span class="type-dot photo"></span>Photos
+                    </span>
+                    <span class="type-pill">
+                        <span class="type-dot video"></span>Videos
+                    </span>
+                    <span class="type-pill">
+                        <span class="type-dot carousel"></span>Carousel
+                    </span>
+                </div>
+            </div>
+
+            <!-- Preview Section (hidden by default) -->
+            <section class="preview-section" id="preview-section">
+                <div class="preview-card glass-card" id="preview-card">
+                    <!-- Thumbnail -->
+                    <div class="preview-thumbnail" id="preview-thumbnail">
+                        <img id="preview-img" src="" alt="Media preview">
+                        <div class="type-badge" id="type-badge">
+                            <span id="type-badge-text">Reel</span>
+                        </div>
+                        <div class="duration-badge" id="duration-badge">
+                            <span id="duration-text"></span>
+                        </div>
+                    </div>
+
+                    <!-- Info -->
+                    <div class="preview-info">
+                        <h3 class="preview-title" id="preview-title">Loading...</h3>
+                        <p class="preview-uploader" id="preview-uploader">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <span id="uploader-name"></span>
+                        </p>
+
+                        <!-- Carousel indicator -->
+                        <div class="carousel-info" id="carousel-info">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <rect x="2" y="2" width="20" height="20" rx="2"/>
+                                <path d="M7 2v20M17 2v20"/>
+                            </svg>
+                            <span id="carousel-count"></span> items in carousel
+                        </div>
+
+                        <!-- Download Button -->
+                        <button class="download-btn" id="download-btn">
+                            <span class="btn-text">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Download
+                            </span>
+                            <span class="btn-loader">
+                                <span class="spinner"></span>
+                                Downloading...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Toast -->
+            <div class="toast" id="toast">
+                <div class="toast-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                </div>
+                <span class="toast-message" id="toast-message">Something went wrong</span>
+            </div>
+
+            <!-- Success Toast -->
+            <div class="toast toast-success" id="toast-success">
+                <div class="toast-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </div>
+                <span class="toast-message" id="toast-success-message">Download complete!</span>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Built with <span class="heart">♥</span> using FastAPI + yt-dlp</p>
+            <p class="disclaimer">For personal use only. Respect content creators' rights.</p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
