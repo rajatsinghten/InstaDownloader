@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.background import BackgroundTask
 
 from downloader import (
     is_valid_instagram_url,
@@ -183,7 +184,7 @@ async def serve_file(filename: str):
         path=filepath,
         media_type=media_type,
         filename=filename,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        background=BackgroundTask(cleanup_file, filepath),
     )
 
 

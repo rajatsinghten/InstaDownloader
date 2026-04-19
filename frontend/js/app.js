@@ -342,12 +342,6 @@ async function triggerFileDownload(filename) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-
-    setTimeout(() => {
-        fetch(`${API_BASE}/api/file/${encodeURIComponent(filename)}`, {
-            method: "DELETE",
-        }).catch(() => {});
-    }, 5000);
 }
 
 // ── Toast Notifications ──────────────────────────────────
