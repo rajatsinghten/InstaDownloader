@@ -32,6 +32,69 @@
             <p class="tagline">Download Reels, Photos & Videos instantly</p>
         </header>
 
+        <!-- Session Banner -->
+        <div class="session-banner" id="session-banner">
+            <div class="session-status" id="session-status">
+                <span class="session-dot" id="session-dot"></span>
+                <span id="session-message">Checking session...</span>
+            </div>
+            <button class="session-toggle-btn" id="session-toggle-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span id="session-toggle-text">Setup</span>
+            </button>
+        </div>
+
+        <!-- Session Setup Panel (hidden by default) -->
+        <div class="session-panel glass-card" id="session-panel">
+            <div class="session-panel-header">
+                <h3>🔐 Instagram Session</h3>
+                <button class="session-close-btn" id="session-close-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="session-instructions">
+                <p>To download Instagram content, you need to provide your session cookie:</p>
+                <ol>
+                    <li>Open <a href="https://www.instagram.com" target="_blank" rel="noopener">instagram.com</a> and log in</li>
+                    <li>Open DevTools (<kbd>F12</kbd> or <kbd>Cmd+Option+I</kbd>)</li>
+                    <li>Go to <strong>Application</strong> → <strong>Cookies</strong> → <strong>instagram.com</strong></li>
+                    <li>Copy the value of <code>sessionid</code></li>
+                </ol>
+            </div>
+
+            <div class="session-form">
+                <div class="session-field">
+                    <label for="session-id-input">Session ID <span class="required">*</span></label>
+                    <input type="text" id="session-id-input" placeholder="Paste your sessionid cookie value..." spellcheck="false">
+                </div>
+                <div class="session-field">
+                    <label for="csrf-input">CSRF Token <span class="optional">(optional)</span></label>
+                    <input type="text" id="csrf-input" placeholder="csrftoken cookie value..." spellcheck="false">
+                </div>
+                <div class="session-field">
+                    <label for="userid-input">User ID <span class="optional">(optional)</span></label>
+                    <input type="text" id="userid-input" placeholder="ds_user_id cookie value..." spellcheck="false">
+                </div>
+                <div class="session-actions">
+                    <button class="save-session-btn" id="save-session-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Save Session
+                    </button>
+                    <button class="clear-session-btn" id="clear-session-btn">Clear</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Input Section -->
         <main class="main">
             <div class="input-section" id="input-section">
@@ -90,7 +153,6 @@
             <!-- Preview Section (hidden by default) -->
             <section class="preview-section" id="preview-section">
                 <div class="preview-card glass-card" id="preview-card">
-                    <!-- Thumbnail -->
                     <div class="preview-thumbnail" id="preview-thumbnail">
                         <img id="preview-img" src="" alt="Media preview">
                         <div class="type-badge" id="type-badge">
@@ -100,8 +162,6 @@
                             <span id="duration-text"></span>
                         </div>
                     </div>
-
-                    <!-- Info -->
                     <div class="preview-info">
                         <h3 class="preview-title" id="preview-title">Loading...</h3>
                         <p class="preview-uploader" id="preview-uploader">
@@ -111,8 +171,6 @@
                             </svg>
                             <span id="uploader-name"></span>
                         </p>
-
-                        <!-- Carousel indicator -->
                         <div class="carousel-info" id="carousel-info">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                                 <rect x="2" y="2" width="20" height="20" rx="2"/>
@@ -120,8 +178,6 @@
                             </svg>
                             <span id="carousel-count"></span> items in carousel
                         </div>
-
-                        <!-- Download Button -->
                         <button class="download-btn" id="download-btn">
                             <span class="btn-text">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20">
@@ -140,7 +196,7 @@
                 </div>
             </section>
 
-            <!-- Error Toast -->
+            <!-- Toasts -->
             <div class="toast" id="toast">
                 <div class="toast-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -151,8 +207,6 @@
                 </div>
                 <span class="toast-message" id="toast-message">Something went wrong</span>
             </div>
-
-            <!-- Success Toast -->
             <div class="toast toast-success" id="toast-success">
                 <div class="toast-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -171,6 +225,7 @@
         </footer>
     </div>
 
+    <script src="js/config.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

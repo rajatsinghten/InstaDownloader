@@ -20,6 +20,10 @@ backend/downloads/
 *.png
 *.webp
 
+# Session cookies (sensitive!)
+backend/instagram_cookies.txt
+backend/session.json
+
 # OS
 .DS_Store
 Thumbs.db
