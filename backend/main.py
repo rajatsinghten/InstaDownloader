@@ -1,8 +1,3 @@
-"""
-InstaDownloader API Server
-FastAPI backend for extracting and downloading Instagram media.
-Supports session-based authentication via stored cookies.
-"""
 
 import os
 from contextlib import asynccontextmanager

@@ -1,8 +1,3 @@
-"""
-Instagram media downloader powered by yt-dlp.
-Handles extraction of metadata and downloading of Reels, Photos, and Videos.
-Uses a stored session cookie for Instagram authentication.
-"""
 
 import glob
 import json

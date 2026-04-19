@@ -21,7 +21,7 @@ A web application to download Instagram Reels, Photos, and Videos.
 Clone the repository and install the backend dependencies:
 
 ```bash
-git clone https://github.com/repository/InstaDownloader.git
+git clone https://github.com/rajatsinghten/InstaDownloader.git
 cd InstaDownloader
 
 python3 -m venv venv
