@@ -1,11 +1,4 @@
-/**
- * InstaDownloader — Frontend Logic
- * Handles session management, URL validation, API calls, preview, and downloads.
- */
 
-// ── Config ───────────────────────────────────────────────
-// For local dev, API_BASE = same origin.
-// For Vercel→Render deployment, set this to your Render backend URL.
 const API_BASE = window.INSTA_API_URL || window.location.origin;
 const REQUEST_TIMEOUT = 60000;
 
