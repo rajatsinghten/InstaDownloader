@@ -1,11 +1,10 @@
 # InstaDownloader
 
 A web application to download Instagram Reels, Photos, and Videos.
-
+Live Link : https://insta-downloader-roan.vercel.app/
 ## Features
 
 - Download Reels, Videos, Photos and Carousel posts
-- Environment-variable based authentication for private and restricted content
 - Media preview before downloading
 - Support for frontend (Vercel) and backend (Render) deployment
 
