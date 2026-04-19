@@ -4,6 +4,7 @@
  */
 
 const API_BASE = window.location.origin;
+const REQUEST_TIMEOUT = 60000; // 60s timeout for extraction/download
 
 // ── DOM Elements ─────────────────────────────────────────
 const urlInput = document.getElementById("url-input");
@@ -28,10 +29,60 @@ const toastSuccessMessage = document.getElementById("toast-success-message");
 // ── State ────────────────────────────────────────────────
 let currentMediaInfo = null;
 
-// ── URL Validation ───────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────
 function isValidInstagramURL(url) {
     const pattern = /https?:\/\/(www\.)?(instagram\.com|instagr\.am)\/(p|reel|reels|tv)\/[\w-]+/;
     return pattern.test(url.trim());
+}
+
+function fetchWithTimeout(url, options = {}, timeout = REQUEST_TIMEOUT) {
+    return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Request timed out. The server may be busy — try again.")), timeout)
+        ),
+    ]);
+}
+
+function friendlyError(message) {
+    const lower = message.toLowerCase();
+    if (lower.includes("429") || lower.includes("rate")) {
+        return "Instagram is rate-limiting requests. Please wait a minute and try again.";
+    }
+    if (lower.includes("private") || lower.includes("login")) {
+        return "This post appears to be private. Only public posts can be downloaded.";
+    }
+    if (lower.includes("not found") || lower.includes("404")) {
+        return "Post not found. It may have been deleted or the URL is incorrect.";
+    }
+    if (lower.includes("timed out")) {
+        return message;
+    }
+    if (lower.includes("failed to fetch") || lower.includes("networkerror")) {
+        return "Cannot reach the server. Make sure the backend is running.";
+    }
+    return message || "Something went wrong. Please try again.";
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return "";
+    const units = ["B", "KB", "MB", "GB"];
+    let i = 0;
+    let size = bytes;
+    while (size >= 1024 && i < units.length - 1) {
+        size /= 1024;
+        i++;
+    }
+    return `${size.toFixed(1)} ${units[i]}`;
+}
+
+function resetState() {
+    currentMediaInfo = null;
+    previewSection.classList.remove("visible");
+    downloadBtn.classList.remove("loading");
+    downloadBtn.disabled = false;
+    fetchBtn.classList.remove("loading");
+    fetchBtn.disabled = !isValidInstagramURL(urlInput.value.trim());
 }
 
 // ── Input Handling ───────────────────────────────────────
@@ -90,7 +141,7 @@ async function fetchMedia() {
     previewSection.classList.remove("visible");
 
     try {
-        const response = await fetch(`${API_BASE}/api/extract`, {
+        const response = await fetchWithTimeout(`${API_BASE}/api/extract`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url }),
@@ -105,7 +156,7 @@ async function fetchMedia() {
         currentMediaInfo = result.data;
         displayPreview(result.data);
     } catch (err) {
-        showToast(err.message || "Failed to fetch media. Check the URL and try again.");
+        showToast(friendlyError(err.message));
     } finally {
         fetchBtn.classList.remove("loading");
         fetchBtn.disabled = !isValidInstagramURL(urlInput.value.trim());
@@ -174,7 +225,7 @@ async function downloadMedia() {
     downloadBtn.disabled = true;
 
     try {
-        const response = await fetch(`${API_BASE}/api/download`, {
+        const response = await fetchWithTimeout(`${API_BASE}/api/download`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url }),
@@ -193,14 +244,17 @@ async function downloadMedia() {
             for (const file of data.files) {
                 await triggerFileDownload(file.filename);
             }
-            showSuccessToast(`Downloaded ${data.files.length} files!`);
+            const totalSize = data.files.reduce((s, f) => s + (f.size || 0), 0);
+            const sizeStr = totalSize ? ` (${formatFileSize(totalSize)})` : "";
+            showSuccessToast(`Downloaded ${data.files.length} files${sizeStr}!`);
         } else {
             // Single file download
             await triggerFileDownload(data.filename);
-            showSuccessToast("Download complete!");
+            const sizeStr = data.size ? ` (${formatFileSize(data.size)})` : "";
+            showSuccessToast(`Download complete${sizeStr}!`);
         }
     } catch (err) {
-        showToast(err.message || "Download failed. Please try again.");
+        showToast(friendlyError(err.message));
     } finally {
         downloadBtn.classList.remove("loading");
         downloadBtn.disabled = false;
@@ -245,7 +299,24 @@ function showSuccessToast(message, duration = 3000) {
     }, duration);
 }
 
-// ── Auto-focus on load ───────────────────────────────────
+// ── Drag & Drop URL ──────────────────────────────────────
+document.body.addEventListener("dragover", (e) => e.preventDefault());
+document.body.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const text = e.dataTransfer.getData("text/plain");
+    if (text && isValidInstagramURL(text)) {
+        urlInput.value = text;
+        urlInput.dispatchEvent(new Event("input"));
+        setTimeout(fetchMedia, 200);
+    }
+});
+
+// ── Init ─────────────────────────────────────────────────
 window.addEventListener("DOMContentLoaded", () => {
     urlInput.focus();
+
+    // Server health check
+    fetch(`${API_BASE}/api/extract`, { method: "OPTIONS" }).catch(() => {
+        showToast("⚠️ Backend server not detected. Make sure it's running on port 8000.", 6000);
+    });
 });
