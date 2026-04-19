@@ -8,9 +8,12 @@ import glob
 import json
 import os
 import re
+import urllib.parse
 import uuid
 from typing import Optional
 
+import instaloader
+import requests
 import yt_dlp
 
 DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), "downloads")
@@ -88,6 +91,122 @@ def clear_session():
         if os.path.exists(f):
             os.remove(f)
 
+# ── Instaloader Fallback ──────────────────────────────────
+
+def _get_instaloader() -> instaloader.Instaloader:
+    L = instaloader.Instaloader(quiet=True)
+    if os.path.exists(SESSION_FILE):
+        try:
+            with open(SESSION_FILE) as f:
+                sessionid = json.load(f).get("sessionid")
+                if sessionid:
+                    L.context._session.cookies.set("sessionid", sessionid, domain=".instagram.com")
+        except Exception:
+            pass
+    return L
+
+def _extract_info_instaloader(url: str) -> dict:
+    path = urllib.parse.urlparse(url).path
+    parts = [p for p in path.split("/") if p]
+    if len(parts) >= 2 and parts[0] in ("p", "reel", "reels", "tv"):
+        shortcode = parts[1]
+    else:
+        raise ValueError("Invalid Instagram URL for fallback extraction")
+    
+    L = _get_instaloader()
+    post = instaloader.Post.from_shortcode(L.context, shortcode)
+    title = (post.caption and post.caption.replace('\n', ' ')[:50] or "Instagram Media")
+    
+    media_type = "video" if post.is_video else "photo"
+    if post.typename == "GraphSidecar":
+        items = []
+        for node in post.get_sidecar_nodes():
+            items.append({
+                "title": title,
+                "thumbnail": node.display_url,
+                "type": "video" if node.is_video else "photo",
+                "duration": 0,
+                "ext": "mp4" if node.is_video else "jpg",
+                "url": node.video_url if node.is_video else node.display_url,
+            })
+        return {
+            "title": post.caption and post.caption[:50] or "Instagram Carousel",
+            "thumbnail": items[0]["thumbnail"] if items else post.url,
+            "type": "carousel",
+            "items": items,
+            "item_count": len(items),
+            "uploader": post.owner_username,
+            "url": url,
+        }
+
+    return {
+        "title": title,
+        "thumbnail": post.url,
+        "type": media_type,
+        "duration": 0,
+        "uploader": post.owner_username,
+        "ext": "mp4" if post.is_video else "jpg",
+        "url": url,
+        "width": 1080,
+        "height": 1080,
+    }
+
+def _download_media_instaloader(url: str, file_id: str) -> dict:
+    path = urllib.parse.urlparse(url).path
+    parts = [p for p in path.split("/") if p]
+    if len(parts) >= 2 and parts[0] in ("p", "reel", "reels", "tv"):
+        shortcode = parts[1]
+    else:
+        raise ValueError("Invalid Instagram URL for fallback download")
+        
+    L = _get_instaloader()
+    post = instaloader.Post.from_shortcode(L.context, shortcode)
+    title_safe = "".join(x for x in (post.caption or "Instagram_Media") if x.isalnum() or x in " _-")[:30]
+    
+    if post.typename == "GraphSidecar":
+        files = []
+        for i, node in enumerate(post.get_sidecar_nodes()):
+            dl_url = node.video_url if node.is_video else node.display_url
+            ext = "mp4" if node.is_video else "jpg"
+            filename = f"{file_id}_carousel_{i}_{title_safe}.{ext}"
+            filepath = os.path.join(DOWNLOADS_DIR, filename)
+            
+            r = requests.get(dl_url, stream=True)
+            r.raise_for_status()
+            with open(filepath, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    
+            files.append({
+                "filename": filename,
+                "filepath": filepath,
+                "type": "video" if node.is_video else "photo",
+                "size": os.path.getsize(filepath),
+            })
+        return {
+            "type": "carousel",
+            "files": files,
+            "count": len(files),
+        }
+    
+    dl_url = post.video_url if post.is_video else post.url
+    ext = "mp4" if post.is_video else "jpg"
+    filename = f"{file_id}_{title_safe}.{ext}"
+    filepath = os.path.join(DOWNLOADS_DIR, filename)
+
+    r = requests.get(dl_url, stream=True)
+    r.raise_for_status()
+    with open(filepath, "wb") as f:
+        for chunk in r.iter_content(chunk_size=8192):
+            f.write(chunk)
+            
+    return {
+        "filename": filename,
+        "filepath": filepath,
+        "type": "video" if post.is_video else "photo",
+        "size": os.path.getsize(filepath),
+    }
+
 
 # ── yt-dlp Options ────────────────────────────────────────
 
@@ -147,11 +266,17 @@ def extract_info(url: str) -> dict:
         "skip_download": True,
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
 
-    if not info:
-        raise ValueError("Could not extract information from URL")
+        if not info:
+            raise ValueError("Could not extract information from URL")
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "no video" in error_msg or "unsupported url" in error_msg:
+            return _extract_info_instaloader(url)
+        raise e
 
     # Handle playlist/carousel posts
     entries = info.get("entries")
@@ -205,11 +330,17 @@ def download_media(url: str) -> dict:
         "writethumbnail": False,
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
 
-    if not info:
-        raise ValueError("Download failed — no info returned")
+        if not info:
+            raise ValueError("Download failed — no info returned")
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "no video" in error_msg or "unsupported url" in error_msg:
+            return _download_media_instaloader(url, file_id)
+        raise e
 
     # Handle carousel / playlist
     entries = info.get("entries")
