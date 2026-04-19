@@ -7,3 +7,9 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
+      - key: SESSIONID
+        sync: false
+      - key: CSRFTOKEN
+        sync: false
+      - key: DS_USER_ID
+        sync: false

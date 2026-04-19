@@ -14,9 +14,7 @@ from downloader import (
     extract_info,
     download_media,
     cleanup_file,
-    save_session,
     get_session_status,
-    clear_session,
     DOWNLOADS_DIR,
 )
 
@@ -54,53 +52,6 @@ class URLRequest(BaseModel):
     url: str
 
 
-class SessionRequest(BaseModel):
-    sessionid: str
-    csrftoken: str = ""
-    ds_user_id: str = ""
-
-
-# ── Session Routes ────────────────────────────────────────
-@app.post("/api/session")
-async def set_session(req: SessionRequest):
-    """Store Instagram session cookies for authentication."""
-    if not req.sessionid or len(req.sessionid) < 10:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid session ID. It should be a long string from your browser cookies.",
-        )
-
-    try:
-        save_session(
-            session_id=req.sessionid,
-            csrf_token=req.csrftoken,
-            ds_user_id=req.ds_user_id,
-        )
-        return {
-            "success": True,
-            "message": "Session saved successfully. You can now download Instagram media.",
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to save session: {str(e)}",
-        )
-
-
-@app.get("/api/session")
-async def check_session():
-    """Check if a valid Instagram session is configured."""
-    status = get_session_status()
-    return {"success": True, "data": status}
-
-
-@app.delete("/api/session")
-async def remove_session():
-    """Clear stored Instagram session cookies."""
-    clear_session()
-    return {"success": True, "message": "Session cleared."}
-
-
 # ── Media Routes ──────────────────────────────────────────
 @app.post("/api/extract")
 async def extract_media_info(req: URLRequest):
@@ -121,7 +72,7 @@ async def extract_media_info(req: URLRequest):
         if "login" in error_msg.lower() or "empty media" in error_msg.lower():
             raise HTTPException(
                 status_code=401,
-                detail="Instagram requires authentication. Please set your session cookie first.",
+                detail="Instagram requires authentication. Configure session env vars on the backend and redeploy.",
             )
         raise HTTPException(
             status_code=422,
@@ -148,7 +99,7 @@ async def download_media_file(req: URLRequest):
         if "login" in error_msg.lower() or "empty media" in error_msg.lower():
             raise HTTPException(
                 status_code=401,
-                detail="Instagram requires authentication. Please update your session cookie.",
+                detail="Instagram requires authentication. Configure session env vars on the backend and redeploy.",
             )
         raise HTTPException(
             status_code=500,

@@ -22,22 +22,8 @@ const toastMessage = document.getElementById("toast-message");
 const toastSuccess = document.getElementById("toast-success");
 const toastSuccessMessage = document.getElementById("toast-success-message");
 
-// Session elements
-const sessionDot = document.getElementById("session-dot");
-const sessionMessage = document.getElementById("session-message");
-const sessionToggleBtn = document.getElementById("session-toggle-btn");
-const sessionToggleText = document.getElementById("session-toggle-text");
-const sessionPanel = document.getElementById("session-panel");
-const sessionCloseBtn = document.getElementById("session-close-btn");
-const sessionIdInput = document.getElementById("session-id-input");
-const csrfInput = document.getElementById("csrf-input");
-const useridInput = document.getElementById("userid-input");
-const saveSessionBtn = document.getElementById("save-session-btn");
-const clearSessionBtn = document.getElementById("clear-session-btn");
-
 // ── State ────────────────────────────────────────────────
 let currentMediaInfo = null;
-let isAuthenticated = false;
 
 // ── Helpers ──────────────────────────────────────────────
 function isValidInstagramURL(url) {
@@ -59,8 +45,11 @@ function friendlyError(message) {
     if (lower.includes("429") || lower.includes("rate")) {
         return "Instagram is rate-limiting requests. Wait a minute and try again.";
     }
+    if (lower.includes("expired") || lower.includes("could not be located")) {
+        return "Server session is expired or invalid. Update SESSIONID on backend and redeploy.";
+    }
     if (lower.includes("session") || lower.includes("401") || lower.includes("authentication") || lower.includes("login") || lower.includes("empty media")) {
-        return "Authentication required. Please set your Instagram session cookie first.";
+        return "Authentication required. Configure SESSIONID on backend and redeploy.";
     }
     if (lower.includes("private")) {
         return "This post appears to be private and cannot be downloaded.";
@@ -88,89 +77,6 @@ function formatFileSize(bytes) {
     }
     return `${size.toFixed(1)} ${units[i]}`;
 }
-
-// ── Session Management ───────────────────────────────────
-async function checkSession() {
-    try {
-        const res = await fetch(`${API_BASE}/api/session`);
-        const data = await res.json();
-        const status = data.data;
-
-        isAuthenticated = status.authenticated;
-        sessionDot.classList.toggle("active", isAuthenticated);
-        sessionMessage.textContent = status.message;
-        sessionToggleText.textContent = isAuthenticated ? "Update" : "Setup";
-    } catch {
-        sessionMessage.textContent = "Server unreachable";
-        sessionDot.classList.remove("active");
-        isAuthenticated = false;
-    }
-}
-
-sessionToggleBtn.addEventListener("click", () => {
-    sessionPanel.classList.toggle("visible");
-});
-
-sessionCloseBtn.addEventListener("click", () => {
-    sessionPanel.classList.remove("visible");
-});
-
-saveSessionBtn.addEventListener("click", async () => {
-    const sessionId = sessionIdInput.value.trim();
-    if (!sessionId || sessionId.length < 10) {
-        showToast("Please enter a valid session ID (it's a long string).");
-        return;
-    }
-
-    saveSessionBtn.disabled = true;
-    saveSessionBtn.textContent = "Saving...";
-
-    try {
-        const res = await fetch(`${API_BASE}/api/session`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                sessionid: sessionId,
-                csrftoken: csrfInput.value.trim(),
-                ds_user_id: useridInput.value.trim(),
-            }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            throw new Error(data.detail || "Failed to save session");
-        }
-
-        showSuccessToast("Session saved! You can now download content.");
-        sessionPanel.classList.remove("visible");
-        await checkSession();
-    } catch (err) {
-        showToast(err.message);
-    } finally {
-        saveSessionBtn.disabled = false;
-        saveSessionBtn.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                <polyline points="17 21 17 13 7 13 7 21"/>
-                <polyline points="7 3 7 8 15 8"/>
-            </svg>
-            Save Session`;
-    }
-});
-
-clearSessionBtn.addEventListener("click", async () => {
-    try {
-        await fetch(`${API_BASE}/api/session`, { method: "DELETE" });
-        showSuccessToast("Session cleared.");
-        sessionIdInput.value = "";
-        csrfInput.value = "";
-        useridInput.value = "";
-        await checkSession();
-    } catch {
-        showToast("Failed to clear session.");
-    }
-});
 
 // ── Input Handling ───────────────────────────────────────
 urlInput.addEventListener("input", () => {
@@ -208,12 +114,6 @@ fetchBtn.addEventListener("click", fetchMedia);
 async function fetchMedia() {
     const url = urlInput.value.trim();
     if (!isValidInstagramURL(url)) return;
-
-    if (!isAuthenticated) {
-        showToast("Please set your Instagram session cookie first.");
-        sessionPanel.classList.add("visible");
-        return;
-    }
 
     fetchBtn.classList.add("loading");
     fetchBtn.disabled = true;
@@ -371,5 +271,4 @@ document.body.addEventListener("drop", (e) => {
 // ── Init ─────────────────────────────────────────────────
 window.addEventListener("DOMContentLoaded", () => {
     urlInput.focus();
-    checkSession();
 });

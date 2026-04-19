@@ -5,7 +5,7 @@ A web application to download Instagram Reels, Photos, and Videos.
 ## Features
 
 - Download Reels, Videos, Photos and Carousel posts
-- Session-based authentication for private and restricted content
+- Environment-variable based authentication for private and restricted content
 - Media preview before downloading
 - Support for frontend (Vercel) and backend (Render) deployment
 
@@ -41,12 +41,12 @@ The application will start at `http://localhost:8000`.
 
 ### 3. Authentication Setup
 
-To download content, you need to provide your Instagram session cookie:
+Set Instagram cookies as backend environment variables:
 
-1. Log into instagram.com in your web browser.
-2. Open Developer Tools and navigate to the Cookies section under Application/Storage.
-3. Copy the value of the `sessionid` cookie.
-4. On the InstaDownloader webpage, click Setup and paste your session ID.
+1. Log into instagram.com in your browser.
+2. Open DevTools and copy the `sessionid` cookie value.
+3. Set `SESSIONID` in your backend environment.
+4. Optionally set `CSRFTOKEN` and `DS_USER_ID` for better compatibility.
 
 ## Deployment
 
@@ -61,6 +61,7 @@ To download content, you need to provide your Instagram session cookie:
 1. Create a new Web Service on Render and connect the repository.
 2. Render will automatically detect `render.yaml`.
 3. Set the Environment Variable `PYTHON_VERSION` to `3.11`.
+4. Add `SESSIONID` (required), plus optional `CSRFTOKEN` and `DS_USER_ID`.
 
 ## Legal Disclaimer
 
