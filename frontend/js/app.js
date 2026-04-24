@@ -210,6 +210,8 @@ async function downloadMedia() {
         if (data.type === "carousel" && data.files) {
             for (const file of data.files) {
                 await triggerFileDownload(file.filename);
+                // Add a small delay between downloads to ensure the browser processes each one
+                await new Promise(r => setTimeout(r, 600));
             }
             const totalSize = data.files.reduce((s, f) => s + (f.size || 0), 0);
             const sizeStr = totalSize ? ` (${formatFileSize(totalSize)})` : "";

@@ -224,16 +224,14 @@ def _detect_media_type(info: dict) -> str:
     return "video"
 
 
-def _find_downloaded_file(file_id: str) -> Optional[str]:
-    """Find a downloaded file by its unique ID prefix in the downloads dir."""
+def _find_downloaded_files(file_id: str) -> list[str]:
+    """Find all downloaded files by their unique ID prefix in the downloads dir."""
     pattern = os.path.join(DOWNLOADS_DIR, f"{file_id}_*")
     matches = glob.glob(pattern)
-    if matches:
-        for m in matches:
-            if not m.endswith(".part"):
-                return m
-        return matches[0]
-    return None
+    # Filter out .part files and sort them to maintain order
+    valid_files = [m for m in matches if not m.endswith(".part")]
+    valid_files.sort()
+    return valid_files
 
 
 def extract_info(url: str) -> dict:
@@ -305,7 +303,7 @@ def download_media(url: str) -> dict:
 
     ydl_opts = {
         **_base_opts(),
-        "outtmpl": os.path.join(DOWNLOADS_DIR, f"{file_id}_%(title).50s.%(ext)s"),
+        "outtmpl": os.path.join(DOWNLOADS_DIR, f"{file_id}_%(playlist_index|0)s_%(title).50s.%(ext)s"),
         "format": "best",
         "writethumbnail": False,
     }
@@ -326,10 +324,9 @@ def download_media(url: str) -> dict:
     entries = info.get("entries")
     if entries:
         files = []
+        # First try to find files using prepare_filename
         for entry in entries:
             filepath = ydl.prepare_filename(entry)
-            if not os.path.exists(filepath):
-                filepath = _find_downloaded_file(file_id) or filepath
             if os.path.exists(filepath):
                 files.append({
                     "filename": os.path.basename(filepath),
@@ -337,6 +334,23 @@ def download_media(url: str) -> dict:
                     "type": _detect_media_type(entry),
                     "size": os.path.getsize(filepath),
                 })
+        
+        # If prepare_filename failed to find all files, fallback to glob
+        if len(files) < len(entries):
+            found_files = _find_downloaded_files(file_id)
+            # Re-build files list if we found matches via glob that weren't captured
+            if len(found_files) >= len(entries):
+                files = []
+                # Try to match found files back to entries
+                for i, filepath in enumerate(found_files[:len(entries)]):
+                    entry = entries[i] if i < len(entries) else entries[-1]
+                    files.append({
+                        "filename": os.path.basename(filepath),
+                        "filepath": filepath,
+                        "type": _detect_media_type(entry),
+                        "size": os.path.getsize(filepath),
+                    })
+        
         return {
             "type": "carousel",
             "files": files,
@@ -355,9 +369,9 @@ def download_media(url: str) -> dict:
                 break
 
     if not os.path.exists(filepath):
-        found = _find_downloaded_file(file_id)
+        found = _find_downloaded_files(file_id)
         if found:
-            filepath = found
+            filepath = found[0]
 
     if not os.path.exists(filepath):
         raise FileNotFoundError(
